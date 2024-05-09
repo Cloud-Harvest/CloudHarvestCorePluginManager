@@ -8,7 +8,16 @@ for more information.
 - [Cloud Harvest Plugin Manager](#cloud-harvest-plugin-manager)
 - [Table of Contents](#table-of-contents)
 - [Plugin Development Guide](#plugin-development-guide)
+  - [Tasks & Task Chains](#tasks--task-chains)
+    - [Base Classes](#base-classes)
+    - [Naming Conventions](#naming-conventions)
+    - [Task Chain YAML](#task-chain-yaml)
+  - [Binaries](#binaries)
+  - [Other Languages](#other-languages)
+  - [Operating Systems](#operating-systems)
+- [How Harvest Uses Your Plugin](#how-harvest-uses-your-plugin)
 - [License](#license)
+- [Special License Considerations](#special-license-considerations)
 
 # Plugin Development Guide
 The intended purpose of Harvest is to be extensible through plugins so that users can add their own data collectors, data manipulators, and data exporters.
