@@ -130,28 +130,43 @@ class PluginRegistry:
         return matching_classes if matching_classes else None
 
     @staticmethod
-    def install():
+    def install(quiet: bool = False):
         """
         Installs all plugins in PluginRegistry.plugins. Once all plugins are installed, they are initialized.
+
+        Args:
+            quiet (bool, optional): If True, suppresses logging output. Default is False.
         """
 
         if not PluginRegistry.plugins:
             logger.warning('No plugins to install.')
             return
 
-        from subprocess import run, PIPE
+        # configure a cache directory for pip
+        from pathlib import Path
+        cache_path = Path('./app/pip/cache')
+        cache_path.mkdir(parents=True, exist_ok=True)
 
-        args = ['pip', 'install'] + [f'git+{url}@{branch}' for url, branch in PluginRegistry.plugins.items()]
+        from subprocess import run, PIPE
+        from sys import stdout
+
+        route_output = PIPE if quiet else stdout
+
+        args = ['pip', 'install']
+        args.extend([f'git+{url}@{branch}' for url, branch in PluginRegistry.plugins.items()])
+        args.extend(['--cache-dir', str(cache_path)])
 
         logger.debug(f'Installing plugins: {" ".join(args)}')
-
-        process = run(args=args, stdout=PIPE, stderr=PIPE)
+        process = run(args=args, stdout=route_output, stderr=route_output)
 
         if process.returncode != 0:
             logger.error(f'Plugin installation failed with error code {process.returncode}')
-            logger.error(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
+
+            if route_output == PIPE:
+                logger.error(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
 
         else:
-            logger.debug(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
+            if route_output == PIPE:
+                logger.debug(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
 
             PluginRegistry._initialize_all_plugins()

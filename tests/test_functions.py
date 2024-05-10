@@ -1,5 +1,5 @@
 import unittest
-from functions import list_plugins_from_github_organization
+from CloudHarvestCorePluginManager.functions import list_plugins_from_github_organization
 
 
 class TestFunctions(unittest.TestCase):

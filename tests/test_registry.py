@@ -1,6 +1,5 @@
 import unittest
-from unittest.mock import patch
-from registry import PluginRegistry
+from CloudHarvestCorePluginManager.registry import PluginRegistry
 
 
 class DummyClass:
@@ -10,11 +9,23 @@ class DummyClass:
 class TestPluginRegistry(unittest.TestCase):
     def setUp(self):
 
+        PluginRegistry.plugins = {
+            'https://github.com/Cloud-Harvest/CloudHarvestPluginAws.git': 'main'
+        }
+
         PluginRegistry.classes = {
             'package1': {'Class1': str, 'Class2': int},
             'package2': {'Class3': str, 'Class4': int},
             'package3': {'Class5': DummyClass, 'Class6': bool},
         }
+
+    def test_install(self):
+        # Test installing plugins
+        PluginRegistry.install(quiet=False)
+        [
+            self.assertTrue(expected_plugin in PluginRegistry.classes.keys())
+            for expected_plugin in ['CloudHarvestPluginAws', 'CloudHarvestCoreTasks', 'CloudHarvestCoreDataModel']
+        ]
 
     def test_find_classes(self):
         # Test finding a class that exists
