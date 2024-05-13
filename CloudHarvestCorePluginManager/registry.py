@@ -78,7 +78,7 @@ class PluginRegistry:
         return classes
 
     @staticmethod
-    def find_classes(class_name: str,
+    def find_classes(class_name: str = None,
                      package_name: str = None,
                      is_instance_of: Any = None,
                      is_subclass_of: Any = None,
@@ -108,7 +108,7 @@ class PluginRegistry:
             # Iterate over all classes in the package
             for cls_name, cls in pr_classes.items():
                 # Skip if class_name does not match the current class
-                if cls_name != class_name:
+                if class_name is not None and cls_name != class_name:
                     continue
 
                 # Skip if is_instance_of is specified and the current class is not an instance of it

@@ -36,7 +36,7 @@ class TestPluginRegistry(unittest.TestCase):
         self.assertTrue(isinstance(result, DummyClass.__class__))
 
         # Test finding a class that doesn't exist
-        result = PluginRegistry.find_classes('Class3', 'package1')
+        result = PluginRegistry.find_classes('ClassDerp', 'package1')
         self.assertIsNone(result)
 
         # Test finding a class with is_instance_of parameter
