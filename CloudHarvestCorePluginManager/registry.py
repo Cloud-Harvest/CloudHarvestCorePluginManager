@@ -1,6 +1,5 @@
 from logging import getLogger
-from types import ModuleType
-from typing import Any
+from typing import Any, Literal
 
 logger = getLogger('harvest')
 
@@ -42,7 +41,7 @@ class PluginRegistry:
 
         # Iterate over all directories in the site-packages directory that match the pattern
         for directory in glob.glob(pattern):
-            
+
             # Get the package name from the directory path
             package_name = os.path.basename(directory)
 
@@ -52,41 +51,18 @@ class PluginRegistry:
                 PluginRegistry.modules[package_name] = importlib.import_module(package_name)
 
                 # Get all classes within the module
-                PluginRegistry.classes[package_name] = PluginRegistry.register_all_classes_in_package(PluginRegistry.modules[package_name])
+                PluginRegistry.classes[package_name] = PluginRegistry.register_all_classes_in_package(
+                    PluginRegistry.modules[package_name])
 
         return PluginRegistry
-
-    @staticmethod
-    def register_all_classes_in_package(package):
-        """
-        Retrieves all classes from a package.
-
-        Args:
-            package: The package to retrieve classes from.
-
-        Returns:
-            A dictionary of classes in the package.
-        """
-
-        import pkgutil
-        import importlib
-        import inspect
-
-        classes = {}
-        for _, module_name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
-            module = importlib.import_module(module_name)
-            for name, obj in inspect.getmembers(module):
-                if inspect.isclass(obj) and package.__name__ in obj.__module__:
-                    classes[name] = obj
-
-        return classes
 
     @staticmethod
     def find_classes(class_name: str = None,
                      package_name: str = None,
                      is_instance_of: Any = None,
                      is_subclass_of: Any = None,
-                     return_all_matching: bool = False) -> Any:
+                     return_all_matching: bool = False,
+                     return_type: Literal['both', 'classes', 'instantiated'] = 'both') -> Any:
         """
         Retrieves a class or classes from the PluginRegistry based on the provided parameters.
 
@@ -95,43 +71,82 @@ class PluginRegistry:
             package_name (str, optional): The name of the package. If specified, only classes from this package are considered.
             is_instance_of (Any, optional): If specified, only classes that are instances of this class are considered.
             is_subclass_of (Any, optional): If specified, only classes that are subclasses of this class are considered.
-            return_all_matching (bool, optional): If True, return all classes that match the provided parameters. If False, return the first matching class.
+            return_all_matching (bool, optional): If True, return all classes that match the provided parameters.
+                                                  If False, return the first matching class.
+            return_type (str, optional): If 'classes', return classes.
+                                         If 'instantiated', return instantiated classes.
+                                         If 'both', return both classes and instantiated classes.
 
         Returns:
             The class or classes if they exist in the PluginRegistry and match the provided parameters; otherwise, None.
         """
 
         matching_classes = []
+        matching_instances = []
 
-        # Iterate over all packages in the PluginRegistry
-        for pr_package_name, pr_classes in PluginRegistry.classes.items():
-            # Skip if package_name is specified and does not match the current package
-            if package_name and pr_package_name != package_name:
-                continue
-
-            # Iterate over all classes in the package
-            for cls_name, cls in pr_classes.items():
-                # Skip if class_name does not match the current class
-                if class_name is not None and cls_name != class_name:
+        if return_type in ['classes', 'both']:
+            # Iterate over all packages in the PluginRegistry.classes
+            for pr_package_name, pr_classes in PluginRegistry.classes.items():
+                # Skip if package_name is specified and does not match the current package
+                if package_name and pr_package_name != package_name:
                     continue
 
-                # Skip if is_instance_of is specified and the current class is not an instance of it
-                if is_instance_of and not isinstance(cls, is_instance_of):
+                # Iterate over all classes in the package
+                for cls_name, cls in pr_classes.items():
+                    # Skip if class_name does not match the current class
+                    if class_name is not None and cls_name != class_name:
+                        continue
+
+                    # Skip if is_instance_of is specified and the current class is not an instance of it
+                    if is_instance_of and not isinstance(cls, is_instance_of):
+                        continue
+
+                    # Skip if is_subclass_of is specified and the current class is not a subclass of it
+                    if is_subclass_of and not issubclass(cls, is_subclass_of):
+                        continue
+
+                    # If all conditions are met, add the current class to the list of matching classes
+                    matching_classes.append(cls)
+
+                    # If return_all_matching is False, return the first matching class
+                    if not return_all_matching and return_type == 'classes':
+                        return matching_classes[0]
+
+        if return_type in ['instantiated', 'both']:
+            # Iterate over all packages in the PluginRegistry.instantiated_classes
+            for pr_package_name, pr_modules in PluginRegistry.instantiated_classes.items():
+                # Skip if package_name is specified and does not match the current package
+                if package_name and pr_package_name != package_name:
                     continue
 
-                # Skip if is_subclass_of is specified and the current class is not a subclass of it
-                if is_subclass_of and not issubclass(cls, is_subclass_of):
-                    continue
+                # Iterate over all modules in the package
+                for module_name, items in pr_modules.items():
+                    # Iterate over all items in the module
+                    for item in items:
+                        # Skip if class_name does not match the current item
+                        if class_name is not None and item.__class__.__name__ != class_name:
+                            continue
 
-                # If all conditions are met, add the current class to the list of matching classes
-                matching_classes.append(cls)
+                        # Skip if is_instance_of is specified and the current item is not an instance of it
+                        if is_instance_of and not isinstance(item, is_instance_of):
+                            continue
 
-                # If return_all_matching is False, return the first matching class
-                if not return_all_matching:
-                    return matching_classes[0]
+                        # Skip if is_subclass_of is specified and the current item is not a subclass of it
+                        if is_subclass_of and not issubclass(item.__class__, is_subclass_of):
+                            continue
+
+                        # If all conditions are met, add the current item to the list of matching classes
+                        matching_instances.append(item)
+
+                        # If return_all_matching is False, return the first matching class
+                        if not return_all_matching and return_type == 'instantiated':
+                            return matching_instances[0]
 
         # If return_all_matching is True, return all matching classes
-        return matching_classes if matching_classes else None
+        if return_all_matching or return_type == 'both':
+            return matching_classes + matching_instances
+
+        return None
 
     @staticmethod
     def install(quiet: bool = False):
@@ -167,13 +182,40 @@ class PluginRegistry:
             logger.error(f'Plugin installation failed with error code {process.returncode}')
 
             if route_output == PIPE:
-                logger.error(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
+                logger.error(
+                    f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
 
         else:
             if route_output == PIPE:
-                logger.debug(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
+                logger.debug(
+                    f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
 
             PluginRegistry._initialize_all_plugins()
+
+    @staticmethod
+    def register_all_classes_in_package(package):
+        """
+        Retrieves all classes from a package.
+
+        Args:
+            package: The package to retrieve classes from.
+
+        Returns:
+            A dictionary of classes in the package.
+        """
+
+        import pkgutil
+        import importlib
+        import inspect
+
+        classes = {}
+        for _, module_name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
+            module = importlib.import_module(module_name)
+            for name, obj in inspect.getmembers(module):
+                if inspect.isclass(obj) and package.__name__ in obj.__module__:
+                    classes[name] = obj
+
+        return classes
 
     @staticmethod
     def register_instantiated_classes_by_path(path: str) -> dict:
