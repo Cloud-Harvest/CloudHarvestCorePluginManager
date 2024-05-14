@@ -19,6 +19,12 @@ class TestPluginRegistry(unittest.TestCase):
             'package3': {'Class5': DummyClass, 'Class6': bool},
         }
 
+        from importlib import import_module
+        self.dummy_module = import_module('tests.dummy')
+
+        # Reset the instantiated_classes dictionary
+        PluginRegistry.instantiated_classes = {}
+
     def test_install(self):
         # Test installing plugins
         PluginRegistry.install(quiet=False)
@@ -50,6 +56,29 @@ class TestPluginRegistry(unittest.TestCase):
         # Test finding a class with return_all_matching parameter
         result = PluginRegistry.find_classes('Class1', 'package1', return_all_matching=True)
         self.assertTrue(all(isinstance(cls, str.__class__) for cls in result))
+
+    def test_register_instantiated_classes(self):
+        # Call the method with the dummy module
+        PluginRegistry.register_instantiated_classes_by_path('dummy')
+
+        # Check if the DummyClass was registered
+        result = PluginRegistry.instantiated_classes['dummy']['dummy.test'][0]
+        self.assertEqual(result.name, 'dummy')
+
+        from dummy.test import DummyClass
+        self.assertTrue(isinstance(result, DummyClass))
+
+        # check from relative path '.'
+        PluginRegistry.instantiated_classes = {}
+        PluginRegistry.register_instantiated_classes_by_path('.')
+
+        # Check if the DummyClass was registered
+        result = PluginRegistry.instantiated_classes['tests']['dummy.test'][0]
+        self.assertEqual(result.name, 'dummy')
+
+        from dummy.test import DummyClass
+        self.assertTrue(isinstance(result, DummyClass))
+
 
 
 if __name__ == '__main__':

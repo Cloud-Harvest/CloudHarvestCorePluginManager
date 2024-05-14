@@ -1,4 +1,5 @@
 from logging import getLogger
+from types import ModuleType
 from typing import Any
 
 logger = getLogger('harvest')
@@ -10,11 +11,13 @@ class PluginRegistry:
 
     Attributes:
         classes (dict): A dictionary to store uninstantiated classes of the plugins. Retrieve them using PluginRegistry.find_classes().
+        instantiated_classes (dict): A dictionary to store instantiated classes of the plugins.
         plugins (dict): A dictionary to store the plugins, populated from HarvestConfiguration.plugins.
         modules (dict): A dictionary to store loaded modules.
     """
 
     classes = {}
+    instantiated_classes = {}
     plugins = {}
     modules = {}
 
@@ -39,6 +42,7 @@ class PluginRegistry:
 
         # Iterate over all directories in the site-packages directory that match the pattern
         for directory in glob.glob(pattern):
+            
             # Get the package name from the directory path
             package_name = os.path.basename(directory)
 
@@ -48,12 +52,12 @@ class PluginRegistry:
                 PluginRegistry.modules[package_name] = importlib.import_module(package_name)
 
                 # Get all classes within the module
-                PluginRegistry.classes[package_name] = PluginRegistry._register_all_classes_in_package(PluginRegistry.modules[package_name])
+                PluginRegistry.classes[package_name] = PluginRegistry.register_all_classes_in_package(PluginRegistry.modules[package_name])
 
         return PluginRegistry
 
     @staticmethod
-    def _register_all_classes_in_package(package):
+    def register_all_classes_in_package(package):
         """
         Retrieves all classes from a package.
 
@@ -170,3 +174,63 @@ class PluginRegistry:
                 logger.debug(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
 
             PluginRegistry._initialize_all_plugins()
+
+    @staticmethod
+    def register_instantiated_classes_by_path(path: str) -> dict:
+        """
+        Registers all instantiated classes from a given path into the PluginRegistry's instantiated_classes dictionary.
+
+        This method scans all Python files in the provided path, imports them as modules, and registers all objects that are instances of a class (excluding the classes themselves). The method ignores private and special attributes (those starting with '__').
+
+        The results are stored in the instantiated_classes dictionary, where the key is the package name derived from the provided path, and the value is another dictionary. In this inner dictionary, the key is the module name and the value is a list of instantiated classes from that module.
+
+        Args:
+            path (str): The path to retrieve classes from. This should be a directory containing Python files.
+
+        Returns:
+            dict: A dictionary where the key is the module name and the value is a list of instantiated classes in the module.
+        """
+
+        from os.path import abspath, basename
+        from importlib import import_module
+        from inspect import isclass
+
+        results = {}
+        from glob import glob
+        package_name = basename(abspath(path))
+
+        py_files = glob(path + '/**/*.py', recursive=True)
+        for file in py_files:
+            if '__init__.py' in file:
+                continue
+
+            # Remove the '.py' extension from the filename to get the module name
+            module_name = file[:-3].replace('/', '.').replace('..', '')
+
+            # Log the loading of the module
+            logger.info(f'Loading module: {file}')
+
+            # Import the module
+            module = import_module(module_name, package=package_name)
+
+            # Iterate over all items in the module
+            for item in dir(module):
+
+                # skip private and special attributes
+                if item.startswith('__'):
+                    continue
+
+                # Get the object associated with the item
+                obj = getattr(module, item)
+
+                # Add the object to the results list if it is a class
+                if isinstance(obj, object) and not isclass(obj):
+                    if results.get(module.__name__) is None:
+                        results[module.__name__] = []
+
+                    results[module.__name__].append(obj)
+
+        # Add the results list to the instantiated_classes dictionary with the source module name as the key
+        PluginRegistry.instantiated_classes[package_name] = results
+
+        return results

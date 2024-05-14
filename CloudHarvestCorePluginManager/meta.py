@@ -1,5 +1,5 @@
 meta = dict(name='CloudHarvestCorePluginManager',
-            version='0.1.0',
+            version='0.1.1',
             description='This module is responsible for managing plugins and their configurations.'
                         ' It is designed to work with both the Cloud Harvest API and the Cloud Harvest CLI to load'
                         ' components from plugins such as the Cloud Harvest AWS Plugin.',
