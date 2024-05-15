@@ -248,6 +248,7 @@ class PluginRegistry:
                 if inspect.isclass(obj) and obj.__module__ == module.__name__:
                     classes[name] = obj
 
+        PluginRegistry.classes[package_name] = classes
         return classes
 
     @staticmethod
