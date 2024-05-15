@@ -218,6 +218,39 @@ class PluginRegistry:
         return classes
 
     @staticmethod
+    def register_all_classes_by_path(path: str):
+        """
+        Retrieves all classes from a package.
+
+        Args:
+            path (str): The path to the package to retrieve classes from.
+
+        Returns:
+            A dictionary of classes in the package.
+        """
+
+        import os
+        import pkgutil
+        import importlib
+        import inspect
+
+        classes = {}
+        package_name = os.path.basename(os.path.abspath(path))
+
+        # Iterate over all modules in the package
+        for _, module_name, _ in pkgutil.iter_modules([path]):
+
+            # Import the module
+            module = importlib.import_module(f"{package_name}.{module_name}")
+
+            # Iterate over all classes in the module
+            for name, obj in inspect.getmembers(module):
+                if inspect.isclass(obj) and obj.__module__ == module.__name__:
+                    classes[name] = obj
+
+        return classes
+
+    @staticmethod
     def register_instantiated_classes_by_path(path: str) -> dict:
         """
         Registers all instantiated classes from a given path into the PluginRegistry's instantiated_classes dictionary.
