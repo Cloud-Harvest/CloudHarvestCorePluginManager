@@ -218,12 +218,13 @@ class PluginRegistry:
         return classes
 
     @staticmethod
-    def register_all_classes_by_path(path: str):
+    def register_all_classes_by_path(path: str, override_package_name: str = None):
         """
         Retrieves all classes from a package.
 
         Args:
             path (str): The path to the package to retrieve classes from.
+            override_package_name (str, optional): The name of the package. If not provided, it is derived from the path.
 
         Returns:
             A dictionary of classes in the package.
@@ -248,11 +249,11 @@ class PluginRegistry:
                 if inspect.isclass(obj) and obj.__module__ == module.__name__:
                     classes[name] = obj
 
-        PluginRegistry.classes[package_name] = classes
+        PluginRegistry.classes[override_package_name or package_name] = classes
         return classes
 
     @staticmethod
-    def register_instantiated_classes_by_path(path: str) -> dict:
+    def register_instantiated_classes_by_path(path: str, override_package_name: str = None) -> dict:
         """
         Registers all instantiated classes from a given path into the PluginRegistry's instantiated_classes dictionary.
 
@@ -262,6 +263,7 @@ class PluginRegistry:
 
         Args:
             path (str): The path to retrieve classes from. This should be a directory containing Python files.
+            override_package_name (str, optional): The name of the package within the PluginRegistry. If not provided, it is derived from the path.
 
         Returns:
             dict: A dictionary where the key is the module name and the value is a list of instantiated classes in the module.
@@ -307,6 +309,6 @@ class PluginRegistry:
                     results[module.__name__].append(obj)
 
         # Add the results list to the instantiated_classes dictionary with the source module name as the key
-        PluginRegistry.instantiated_classes[package_name] = results
+        PluginRegistry.instantiated_classes[override_package_name or package_name] = results
 
         return results

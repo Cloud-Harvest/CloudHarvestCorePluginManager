@@ -1,4 +1,5 @@
 import unittest
+import inspect
 from CloudHarvestCorePluginManager.registry import PluginRegistry
 
 
@@ -21,6 +22,9 @@ class TestPluginRegistry(unittest.TestCase):
 
         # Reset the instantiated_classes dictionary
         PluginRegistry.instantiated_classes = {}
+
+        self.path = './dummy/'
+        self.package_name = 'dummy'
 
     def test_install(self):
         # Test installing plugins
@@ -71,6 +75,26 @@ class TestPluginRegistry(unittest.TestCase):
         self.assertTrue(any(isinstance(cls, DummyClass) for cls in result))
         self.assertTrue(any(type(cls) is DummyClass) for cls in result)
 
+    def test_register_all_classes_by_path(self):
+        from dummy.test import DummyClass
+        classes = PluginRegistry.register_all_classes_by_path(self.path, override_package_name='DummyPackage')
+
+        # Test that the returned object is a dictionary
+        self.assertIsInstance(classes, dict)
+
+        # Test that the dictionary is not empty
+        self.assertTrue(classes)
+
+        # Test that the dictionary contains the expected classes
+        self.assertIn('DummyClass', classes.keys())
+
+        # Test that the classes in the dictionary are indeed classes
+        self.assertTrue(inspect.isclass(classes['DummyClass']))
+
+    def test_register_all_classes_by_path_with_invalid_path(self):
+        classes = PluginRegistry.register_all_classes_by_path('invalid_path', self.package_name)
+        assert classes == {}
+
     def test_register_instantiated_classes(self):
         from dummy.test import DummyClass
 
@@ -93,7 +117,6 @@ class TestPluginRegistry(unittest.TestCase):
 
         from dummy.test import DummyClass
         self.assertTrue(isinstance(result, DummyClass))
-
 
 
 if __name__ == '__main__':
