@@ -12,6 +12,9 @@ class PluginRegistry:
         classes (dict): A dictionary to store uninstantiated classes of the plugins. Retrieve them using PluginRegistry.find_classes().
         instantiated_classes (dict): A dictionary to store instantiated classes of the plugins.
         plugins (dict): A dictionary to store the plugins, populated from HarvestConfiguration.plugins.
+                        The format of the dictionary is {package_name_or_url: version_or_branch}.
+                        When the package_name_or_url begins with 'https://' it is considered a git repository and version_or_branch is the branch name.
+                        Otherwise, it is considered a PyPI package and version_or_branch is the version number.
         modules (dict): A dictionary to store loaded modules.
     """
 
@@ -161,19 +164,26 @@ class PluginRegistry:
             logger.warning('No plugins to install.')
             return
 
-        # configure a cache directory for pip
-        from pathlib import Path
-        cache_path = Path('./app/pip/cache')
-        cache_path.mkdir(parents=True, exist_ok=True)
-
         from subprocess import run, PIPE
         from sys import stdout
 
         route_output = PIPE if quiet else stdout
 
+        # construct the pip install command
         args = ['pip', 'install']
-        args.extend([f'git+{url}@{branch}' for url, branch in PluginRegistry.plugins.items()])
-        args.extend(['--cache-dir', str(cache_path)])
+        packages_to_install = []
+
+        # iterate over all plugins and add them to the list of packages to install
+        for package_name_or_url, version_or_branch in PluginRegistry.plugins.items():
+            # check if the package is a git repository
+            if package_name_or_url.startswith('https://'):
+                packages_to_install.append(f'git+{package_name_or_url}@{version_or_branch}')
+
+            # if the package is not a git repository, add it to the list of packages to install
+            else:
+                packages_to_install.append(f'{package_name_or_url}{version_or_branch}')
+
+        args.extend(packages_to_install)
 
         logger.debug(f'Installing plugins: {" ".join(args)}')
         process = run(args=args, stdout=route_output, stderr=route_output)
