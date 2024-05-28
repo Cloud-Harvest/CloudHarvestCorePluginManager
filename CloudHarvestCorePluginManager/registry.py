@@ -219,7 +219,12 @@ class PluginRegistry:
         import inspect
 
         classes = {}
-        for _, module_name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
+        for package_path, module_name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
+
+            # skip modules with names starting with '__'
+            if package_path.path.startswith('__') or module_name.startswith('__'):
+                continue
+
             module = importlib.import_module(module_name)
             for name, obj in inspect.getmembers(module):
                 if inspect.isclass(obj) and package.__name__ in obj.__module__:
@@ -250,6 +255,9 @@ class PluginRegistry:
 
         # Iterate over all modules in the package
         for _, module_name, _ in pkgutil.iter_modules([path]):
+            # Skip modules with names starting with '__'
+            if module_name.startswith('__'):
+                continue
 
             # Import the module
             module = importlib.import_module(f"{package_name}.{module_name}")
@@ -289,7 +297,7 @@ class PluginRegistry:
 
         py_files = glob(path + '/**/*.py', recursive=True)
         for file in py_files:
-            if '__init__.py' in file:
+            if file.startswith('__'):
                 continue
 
             # Remove the '.py' extension from the filename to get the module name

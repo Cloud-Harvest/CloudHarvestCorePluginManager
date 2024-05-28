@@ -91,6 +91,8 @@ class TestPluginRegistry(unittest.TestCase):
         # Test that the classes in the dictionary are indeed classes
         self.assertTrue(inspect.isclass(classes['DummyClass']))
 
+        self.assertEqual(PluginRegistry.find_classes(class_name='DoNotLoadClass'), [])
+
     def test_register_all_classes_by_path_with_invalid_path(self):
         classes = PluginRegistry.register_all_classes_by_path('invalid_path', self.package_name)
         assert classes == {}
