@@ -27,12 +27,18 @@ class Registry:
         """
         result = []
 
-        # Iterate over all classes in the Registry's definitions
-        for name, cls in Registry.definitions.items():
+        # If class_name is provided, retrieve the class based on the key
+        if class_name:
+            cls = Registry.definitions.get(class_name)
+            if cls is None:
+                return result
+            else:
+                definitions = {class_name: cls}
+        else:
+            definitions = Registry.definitions
 
-            # Check if the class name matches the provided class name
-            if class_name and name != class_name:
-                continue
+        # Iterate over all classes in the Registry's definitions
+        for name, cls in definitions.items():
 
             # Check if the class is an instance of the provided instance type
             if is_instance_of and not isinstance(cls, is_instance_of):

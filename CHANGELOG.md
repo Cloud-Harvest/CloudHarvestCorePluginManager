@@ -1,4 +1,7 @@
 # 2024-05-29
+## 0.2.2
+- Added a performance improvement to `find_definition()` which uses `class_name` as a lookup to the `Registry.definitions.keys()`
+
 ## 0.2.1
 - Fixed an issue where the `find` methods would not return the correct class
 
