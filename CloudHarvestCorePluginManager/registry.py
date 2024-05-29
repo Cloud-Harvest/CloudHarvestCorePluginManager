@@ -192,8 +192,7 @@ class PluginRegistry:
             logger.error(f'Plugin installation failed with error code {process.returncode}')
 
             if route_output == PIPE:
-                logger.error(
-                    f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
+                logger.error(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
 
         else:
             if route_output == PIPE:
@@ -217,12 +216,13 @@ class PluginRegistry:
         import pkgutil
         import importlib
         import inspect
+        from os.path import basename
 
         classes = {}
         for package_path, module_name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
 
             # skip modules with names starting with '__'
-            if package_path.path.startswith('__') or module_name.startswith('__'):
+            if basename(package_path.path).startswith('__') or module_name.startswith('__'):
                 continue
 
             module = importlib.import_module(module_name)
@@ -254,9 +254,10 @@ class PluginRegistry:
         package_name = os.path.basename(os.path.abspath(path))
 
         # Iterate over all modules in the package
-        for _, module_name, _ in pkgutil.iter_modules([path]):
-            # Skip modules with names starting with '__'
-            if module_name.startswith('__'):
+        for module_path, module_name, _ in pkgutil.iter_modules([path]):
+
+            # Skip modules with names/paths starting with '__'
+            if module_name.startswith('__') or module_path.path.startswith('__'):
                 continue
 
             # Import the module
