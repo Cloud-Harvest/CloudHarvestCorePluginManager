@@ -1,1 +1,1 @@
-from .registry import PluginRegistry
+from .registry import Registry

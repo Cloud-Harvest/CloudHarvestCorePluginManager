@@ -1,124 +1,51 @@
 import unittest
-import inspect
-from CloudHarvestCorePluginManager.registry import PluginRegistry
+from CloudHarvestCorePluginManager.registry import Registry
 
 
-class TestPluginRegistry(unittest.TestCase):
+class TestRegistry(unittest.TestCase):
     def setUp(self):
-        from dummy.test import DummyClass
+        # Clear the Registry before each test
+        Registry.definitions = {}
+        Registry.instances = []
 
-        PluginRegistry.plugins = {
-            'https://github.com/Cloud-Harvest/CloudHarvestPluginAws.git': 'main'
-        }
+    def test_find_definition(self):
+        class TestClass:
+            pass
 
-        PluginRegistry.classes = {
-            'package1': {'Class1': str, 'Class2': int},
-            'package2': {'Class3': str, 'Class4': int},
-            'package3': {'Class5': DummyClass, 'Class6': bool},
-        }
+        # Add a class to the Registry's definitions
+        Registry.definitions['TestClass'] = TestClass
 
-        from importlib import import_module
-        self.dummy_module = import_module('tests.dummy')
+        # Test find_definition with the class name
+        result = Registry.find_definition('TestClass', None, None, False)
+        self.assertEqual(result, [TestClass])
 
-        # Reset the instantiated_classes dictionary
-        PluginRegistry.instantiated_classes = {}
+        # Test find_definition with is_instance_of
+        result = Registry.find_definition(None, type, None, False)
+        self.assertEqual(result, [TestClass])
 
-        self.path = './dummy/'
-        self.package_name = 'dummy'
+        # Test find_definition with is_subclass_of
+        result = Registry.find_definition(None, None, object, False)
+        self.assertEqual(result, [TestClass])
 
-    def test_install(self):
-        # Test installing plugins
-        PluginRegistry.install(quiet=False)
-        [
-            self.assertTrue(expected_plugin in PluginRegistry.classes.keys())
-            for expected_plugin in ['CloudHarvestPluginAws', 'CloudHarvestCoreTasks', 'CloudHarvestCoreDataModel']
-        ]
+    def test_find_instance(self):
+        class TestClass:
+            pass
 
-    def test_find_classes(self):
-        from dummy.test import DummyClass
+        # Create an instance of the class and add it to the Registry's instances
+        instance = TestClass()
+        Registry.instances.append(instance)
 
-        # Test finding a class that exists
-        result = PluginRegistry.find_classes(class_name='Class1', package_name='package1', return_type='classes')
-        self.assertTrue(isinstance(result, str.__class__))
+        # Test find_instance with the class name
+        result = Registry.find_instance('TestClass', None, None, False)
+        self.assertEqual(result, [instance])
 
-        result = PluginRegistry.find_classes(class_name='Class5', return_type='classes')
-        self.assertTrue(isinstance(result, DummyClass.__class__))
+        # Test find_instance with is_instance_of
+        result = Registry.find_instance(None, TestClass, None, False)
+        self.assertEqual(result, [instance])
 
-        # Test finding a class that doesn't exist
-        result = PluginRegistry.find_classes(class_name='ClassDerp', package_name='package1', return_type='classes')
-        self.assertIsNone(result)
-
-        # Test finding a class with is_instance_of parameter
-        result = PluginRegistry.find_classes(class_name='Class1', package_name='package1', is_instance_of=str.__class__, return_type='classes')
-        self.assertTrue(isinstance(result, str.__class__))
-
-        # Test finding a class with is_subclass_of parameter
-        result = PluginRegistry.find_classes(class_name='Class1', package_name='package1', is_subclass_of=object, return_type='classes')
-        self.assertTrue(isinstance(result, str.__class__))
-
-        # Test finding a class with return_all_matching parameter
-        result = PluginRegistry.find_classes(class_name='Class1', package_name='package1', return_all_matching=True, return_type='classes')
-        self.assertTrue(all(isinstance(cls, str.__class__) for cls in result))
-
-        # Register an instantiated class (dummy.test.DummyClass) as dummy_instantiated
-        PluginRegistry.register_instantiated_classes_by_path('.')
-
-        # Test finding an instantiated class
-        from dummy.test import DummyClass
-        result = PluginRegistry.find_classes(class_name='DummyClass', package_name='tests', return_type='instantiated')
-        self.assertTrue(isinstance(result, DummyClass))
-
-        # Test finding both classes and instantiated classes
-        PluginRegistry.classes['tests'] = {'DummyClass': DummyClass}
-        result = PluginRegistry.find_classes(class_name='DummyClass', return_type='both')
-        self.assertTrue(len(result) == 2)
-        self.assertTrue(any(isinstance(cls, DummyClass) for cls in result))
-        self.assertTrue(any(type(cls) is DummyClass) for cls in result)
-
-    def test_register_all_classes_by_path(self):
-        from dummy.test import DummyClass
-        classes = PluginRegistry.register_all_classes_by_path(self.path, override_package_name='DummyPackage')
-
-        # Test that the returned object is a dictionary
-        self.assertIsInstance(classes, dict)
-
-        # Test that the dictionary is not empty
-        self.assertTrue(classes)
-
-        # Test that the dictionary contains the expected classes
-        self.assertIn('DummyClass', classes.keys())
-
-        # Test that the classes in the dictionary are indeed classes
-        self.assertTrue(inspect.isclass(classes['DummyClass']))
-
-        self.assertEqual(PluginRegistry.find_classes(class_name='DoNotLoadClass'), [])
-
-    def test_register_all_classes_by_path_with_invalid_path(self):
-        classes = PluginRegistry.register_all_classes_by_path('invalid_path', self.package_name)
-        assert classes == {}
-
-    def test_register_instantiated_classes(self):
-        from dummy.test import DummyClass
-
-        # Call the method with the dummy module
-        PluginRegistry.register_instantiated_classes_by_path('dummy')
-
-        # Check if the DummyClass was registered
-        result = PluginRegistry.instantiated_classes['dummy']['dummy.test'][0]
-        self.assertEqual(result.name, 'dummy')
-
-        self.assertTrue(isinstance(result, DummyClass))
-
-        # check from relative path '.'
-        PluginRegistry.instantiated_classes = {}
-        PluginRegistry.register_instantiated_classes_by_path('.')
-
-        # Check if the DummyClass was registered
-        result = PluginRegistry.instantiated_classes['tests']['dummy.test'][0]
-        self.assertEqual(result.name, 'dummy')
-
-        from dummy.test import DummyClass
-        self.assertTrue(isinstance(result, DummyClass))
+        # Test find_instance with is_subclass_of
+        result = Registry.find_instance(None, None, object, False)
+        self.assertEqual(result, [instance])
 
 
 if __name__ == '__main__':

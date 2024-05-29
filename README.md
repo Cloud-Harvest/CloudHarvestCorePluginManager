@@ -15,7 +15,11 @@ for more information.
   - [Binaries](#binaries)
   - [Other Languages](#other-languages)
   - [Operating Systems](#operating-systems)
-- [How Harvest Uses Your Plugin](#how-harvest-uses-your-plugin)
+- [How to Implement Your Plugin](#how-to-implement-your-plugin)
+  - [Decorators](#decorators)
+    - [`register_definition`](#register_definition)
+    - [`register_instance`](#register_instance)
+  - [`__registry__.py`](#__registry__py)
 - [License](#license)
 - [Special License Considerations](#special-license-considerations)
 
@@ -82,14 +86,47 @@ Users who plan to operate Harvest on other operating systems should use Docker o
 To verify the target operating system version, check the contents of the `Dockerfile` in one of the Core Cloud Harvest repositories, 
 such as [CloudHarvestApi](https://github.com/Cloud-Harvest/CloudHarvestApi/blob/main/Dockerfile#L1).
 
-# How Harvest Uses Your Plugin
-When Harvest loads a plugin, it will identify and store all classes in the `[PluginRegistry](./CloudHarvestCorePluginManager/registry.py)`, 
-a key component of this repository. Once the plugin is loaded, Harvest will be able to instantiate and execute the 
-classes within the plugin by calling `PluginRegistry.get_class_by_name()` which, in turn, is called from a TaskChain's 
-templating engine.
+# How to Implement Your Plugin
+1. Use the [`decorators`](CloudHarvestCorePluginManager/decorators.py) to identify which classes and instances should be added to the Registry. Once added, you can find them using [`Registry.find_definition()` and `Registry.find_instance()`](CloudHarvestCorePluginManager/registry.py).
+2. Create a `__registry__.py` in your plugin's directory. This file should contain imports to all classes and instances you want to add to the Registry. Not all classes or instances of classes need be added; only those which the code must reference.
 
+## Decorators
+### `register_definition`
+```python
+# In this example, we add the MyNewTask class to the Registry.
+from CloudHarvestCoreTasks.base import BaseTask
+from CloudHarvestCorePluginManager.decorators import register_definition, register_instance
+
+@register_definition
+class MyNewTask(BaseTask):
+  def __init__(self):
+    pass
+
+# Elsewhere in the code, use the following to execute your class:
+from CloudHarvestCorePluginManager.registry import Registry
+my_class = Registry.find_definition('MyNewTask')[0](my_arg='my_value')
 ```
-TaskChain Yaml File -> TaskChain Templating Engine -> PluginRegistry.get_class_by_name() -> Your Plugin Class
+
+### `register_instance`
+```python
+# In this example, add instances of a class to the Registry.
+from CloudHarvestCorePluginManager.decorators import register_instance
+@register_instance
+class MyClass:
+    def __init__(self):
+        pass
+
+myclass = MyClass()
+```
+
+## `__registry__.py`
+```python
+# Captures definitions
+from .tasks import MyNewTask, MyOtherNewTask
+
+# Captures instances
+from .blueprints import my_blueprint
+
 ```
 
 # License
