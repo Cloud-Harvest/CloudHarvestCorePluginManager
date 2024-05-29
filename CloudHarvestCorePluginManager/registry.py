@@ -36,28 +36,33 @@ class PluginRegistry:
         import sys
         import importlib
 
-        # Get the path of the site-packages directory
-        site_packages_path = site.getsitepackages()[0]
+        try:
+            # Get the path of the site-packages directory
+            site_packages_path = site.getsitepackages()[0]
 
-        # Create a pattern for directories starting with 'CloudHarvest'
-        pattern = os.path.join(site_packages_path, 'CloudHarvest*')
+            # Create a pattern for directories starting with 'CloudHarvest'
+            pattern = os.path.join(site_packages_path, 'CloudHarvest*')
 
-        # Iterate over all directories in the site-packages directory that match the pattern
-        for directory in glob.glob(pattern):
+            # Iterate over all directories in the site-packages directory that match the pattern
+            for directory in glob.glob(pattern):
 
-            # Get the package name from the directory path
-            package_name = os.path.basename(directory)
+                # Get the package name from the directory path
+                package_name = os.path.basename(directory)
 
-            # Check if the package is already imported
-            if package_name not in sys.modules and 'dist-info' not in package_name:
-                # If the package is not already imported, import it
-                PluginRegistry.modules[package_name] = importlib.import_module(package_name)
+                # Check if the package is already imported
+                if package_name not in sys.modules and 'dist-info' not in package_name:
+                    # If the package is not already imported, import it
+                    PluginRegistry.modules[package_name] = importlib.import_module(package_name)
 
-                # Get all classes within the module
-                PluginRegistry.classes[package_name] = PluginRegistry.register_all_classes_in_package(
-                    PluginRegistry.modules[package_name])
+                    # Get all classes within the module
+                    PluginRegistry.classes[package_name] = PluginRegistry.register_all_classes_in_package(
+                        PluginRegistry.modules[package_name])
 
-        return PluginRegistry
+        except Exception as e:
+            logger.error(f'Error initializing plugins: {e}')
+
+        finally:
+            return PluginRegistry
 
     @staticmethod
     def find_classes(class_name: str = None,
@@ -167,39 +172,46 @@ class PluginRegistry:
         from subprocess import run, PIPE
         from sys import stdout
 
-        route_output = PIPE if quiet else stdout
+        try:
+            # set the output route based on the quiet parameter
+            route_output = PIPE if quiet else stdout
 
-        # construct the pip install command
-        args = ['pip', 'install']
-        packages_to_install = []
+            # construct the pip install command
+            args = ['pip', 'install']
+            packages_to_install = []
 
-        # iterate over all plugins and add them to the list of packages to install
-        for package_name_or_url, version_or_branch in PluginRegistry.plugins.items():
-            # check if the package is a git repository
-            if package_name_or_url.startswith('https://'):
-                packages_to_install.append(f'git+{package_name_or_url}@{version_or_branch}')
+            # iterate over all plugins and add them to the list of packages to install
+            for package_name_or_url, version_or_branch in PluginRegistry.plugins.items():
+                # check if the package is a git repository
+                if package_name_or_url.startswith('https://'):
+                    packages_to_install.append(f'git+{package_name_or_url}@{version_or_branch}')
 
-            # if the package is not a git repository, add it to the list of packages to install
+                # if the package is not a git repository, add it to the list of packages to install
+                else:
+                    packages_to_install.append(f'{package_name_or_url}{version_or_branch}')
+
+            args.extend(packages_to_install)
+
+            logger.debug(f'Installing plugins: {" ".join(args)}')
+            process = run(args=args, stdout=route_output, stderr=route_output)
+
+            if process.returncode != 0:
+                logger.error(f'Plugin installation failed with error code {process.returncode}')
+
+                if route_output == PIPE:
+                    logger.error(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
+
             else:
-                packages_to_install.append(f'{package_name_or_url}{version_or_branch}')
+                if route_output == PIPE:
+                    logger.debug(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
 
-        args.extend(packages_to_install)
+                PluginRegistry._initialize_all_plugins()
 
-        logger.debug(f'Installing plugins: {" ".join(args)}')
-        process = run(args=args, stdout=route_output, stderr=route_output)
+        except Exception as e:
+            logger.error(f'Error installing plugins: {e}')
 
-        if process.returncode != 0:
-            logger.error(f'Plugin installation failed with error code {process.returncode}')
-
-            if route_output == PIPE:
-                logger.error(f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
-
-        else:
-            if route_output == PIPE:
-                logger.debug(
-                    f'Plugin installation output:' + process.stdout.decode('utf-8') + process.stderr.decode('utf-8'))
-
-            PluginRegistry._initialize_all_plugins()
+        finally:
+            return PluginRegistry
 
     @staticmethod
     def register_all_classes_in_package(package):
@@ -219,18 +231,23 @@ class PluginRegistry:
         from os.path import basename
 
         classes = {}
-        for package_path, module_name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
+        try:
+            for package_path, module_name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
 
-            # skip modules with names starting with '__'
-            if basename(package_path.path).startswith('__') or module_name.startswith('__'):
-                continue
+                # skip modules with names starting with '__'
+                if basename(package_path.path).startswith('__') or module_name.startswith('__'):
+                    continue
 
-            module = importlib.import_module(module_name)
-            for name, obj in inspect.getmembers(module):
-                if inspect.isclass(obj) and package.__name__ in obj.__module__:
-                    classes[name] = obj
+                module = importlib.import_module(module_name)
+                for name, obj in inspect.getmembers(module):
+                    if inspect.isclass(obj) and package.__name__ in obj.__module__:
+                        classes[name] = obj
 
-        return classes
+        except Exception as e:
+            logger.error(f'Error registering classes in package {package.__name__}: {e}')
+
+        finally:
+            return classes
 
     @staticmethod
     def register_all_classes_by_path(path: str, override_package_name: str = None):
@@ -253,23 +270,30 @@ class PluginRegistry:
         classes = {}
         package_name = os.path.basename(os.path.abspath(path))
 
-        # Iterate over all modules in the package
-        for module_path, module_name, _ in pkgutil.iter_modules([path]):
+        try:
+            # Iterate over all modules in the package
+            for module_path, module_name, _ in pkgutil.iter_modules([path]):
 
-            # Skip modules with names/paths starting with '__'
-            if module_name.startswith('__') or module_path.path.startswith('__'):
-                continue
+                # Skip modules with names/paths starting with '__'
+                if module_name.startswith('__') or module_path.path.startswith('__'):
+                    continue
 
-            # Import the module
-            module = importlib.import_module(f"{package_name}.{module_name}")
+                # Import the module
+                module = importlib.import_module(f"{package_name}.{module_name}")
 
-            # Iterate over all classes in the module
-            for name, obj in inspect.getmembers(module):
-                if inspect.isclass(obj) and obj.__module__ == module.__name__:
-                    classes[name] = obj
+                # Iterate over all classes in the module
+                for name, obj in inspect.getmembers(module):
+                    if inspect.isclass(obj) and obj.__module__ == module.__name__:
+                        classes[name] = obj
 
-        PluginRegistry.classes[override_package_name or package_name] = classes
-        return classes
+        except Exception as e:
+            logger.error(f'Error registering classes in package {package_name}: {e}')
+
+        else:
+            PluginRegistry.classes[override_package_name or package_name] = classes
+
+        finally:
+            return classes
 
     @staticmethod
     def register_instantiated_classes_by_path(path: str, override_package_name: str = None) -> dict:
@@ -296,38 +320,44 @@ class PluginRegistry:
         from glob import glob
         package_name = basename(abspath(path))
 
-        py_files = glob(path + '/**/*.py', recursive=True)
-        for file in py_files:
-            if file.startswith('__'):
-                continue
-
-            # Remove the '.py' extension from the filename to get the module name
-            module_name = file[:-3].replace('/', '.').replace('..', '')
-
-            # Log the loading of the module
-            logger.info(f'Loading module: {file}')
-
-            # Import the module
-            module = import_module(module_name, package=package_name)
-
-            # Iterate over all items in the module
-            for item in dir(module):
-
-                # skip private and special attributes
-                if item.startswith('__'):
+        try:
+            py_files = glob(path + '/**/*.py', recursive=True)
+            for file in py_files:
+                if file.startswith('__'):
                     continue
 
-                # Get the object associated with the item
-                obj = getattr(module, item)
+                # Remove the '.py' extension from the filename to get the module name
+                module_name = file[:-3].replace('/', '.').replace('..', '')
 
-                # Add the object to the results list if it is a class
-                if isinstance(obj, object) and not isclass(obj):
-                    if results.get(module.__name__) is None:
-                        results[module.__name__] = []
+                # Log the loading of the module
+                logger.info(f'Loading module: {file}')
 
-                    results[module.__name__].append(obj)
+                # Import the module
+                module = import_module(module_name, package=package_name)
 
-        # Add the results list to the instantiated_classes dictionary with the source module name as the key
-        PluginRegistry.instantiated_classes[override_package_name or package_name] = results
+                # Iterate over all items in the module
+                for item in dir(module):
 
-        return results
+                    # skip private and special attributes
+                    if item.startswith('__'):
+                        continue
+
+                    # Get the object associated with the item
+                    obj = getattr(module, item)
+
+                    # Add the object to the results list if it is a class
+                    if isinstance(obj, object) and not isclass(obj):
+                        if results.get(module.__name__) is None:
+                            results[module.__name__] = []
+
+                        results[module.__name__].append(obj)
+
+        except Exception as e:
+            logger.error(f'Error registering instantiated classes in package {package_name}: {e}')
+
+        else:
+            # Add the results list to the instantiated_classes dictionary with the source module name as the key
+            PluginRegistry.instantiated_classes[override_package_name or package_name] = results
+
+        finally:
+            return results
