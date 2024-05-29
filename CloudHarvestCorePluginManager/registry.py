@@ -29,27 +29,25 @@ class Registry:
 
         # Iterate over all classes in the Registry's definitions
         for name, cls in Registry.definitions.items():
-            append = False
 
             # Check if the class name matches the provided class name
-            if name == class_name:
-                append = True
+            if class_name and name != class_name:
+                continue
 
             # Check if the class is an instance of the provided instance type
-            elif is_instance_of and isinstance(cls, is_instance_of):
-                append = True
+            if is_instance_of and not isinstance(cls, is_instance_of):
+                continue
 
             # Check if the class is a subclass of the provided class
-            elif is_subclass_of and issubclass(cls, is_subclass_of):
-                append = True
+            if is_subclass_of and not issubclass(cls, is_subclass_of):
+                continue
 
-            # If the class matches any of the criteria, add it to the result list
-            if append:
-                result.append(cls)
+            # If the class matches all of the criteria, add it to the result list
+            result.append(cls)
 
-                # If return_all_matching is False, stop searching after finding the first matching class
-                if not return_all_matching:
-                    break
+            # If return_all_matching is False, stop searching after finding the first matching class
+            if not return_all_matching:
+                break
 
         return result
 
@@ -74,27 +72,25 @@ class Registry:
 
         # Iterate over all instances in the Registry's instances
         for instance in Registry.instances:
-            append = False
 
             # Check if the instance's class name matches the provided class name
-            if instance.__class__.__name__ == class_name:
-                append = True
+            if class_name and instance.__class__.__name__ != class_name:
+                continue
 
             # Check if the instance is an instance of the provided instance type
-            elif is_instance_of and isinstance(instance, is_instance_of):
-                append = True
+            if is_instance_of and not isinstance(instance, is_instance_of):
+                continue
 
             # Check if the instance's class is a subclass of the provided class
-            elif is_subclass_of and issubclass(instance.__class__, is_subclass_of):
-                append = True
+            if is_subclass_of and not issubclass(instance.__class__, is_subclass_of):
+                continue
 
-            # If the instance matches any of the criteria, add it to the result list
-            if append:
-                result.append(instance)
+            # If the instance matches all of the criteria, add it to the result list
+            result.append(instance)
 
-                # If return_all_matching is False, stop searching after finding the first matching instance
-                if not return_all_matching:
-                    break
+            # If return_all_matching is False, stop searching after finding the first matching instance
+            if not return_all_matching:
+                break
 
         return result
 

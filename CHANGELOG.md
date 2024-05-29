@@ -1,4 +1,7 @@
 # 2024-05-29
+## 0.2.1
+- Fixed an issue where the `find` methods would not return the correct class
+
 ## 0.2.0
 - Complete rewrite of the plugin system
 - `PluginRegistry` is now `Registry`
