@@ -103,7 +103,7 @@ class Registry:
     @staticmethod
     def register_objects():
         """
-        Loads all packages with the prefix 'CloudHarvestPlugin' and imports the contents of each package's '__register__.py' file.
+        Loads all packages with the prefix 'CloudHarvest' and imports the contents of each package's '__register__.py' file.
         """
         import pkgutil
         import importlib
@@ -115,8 +115,8 @@ class Registry:
         # Iterate over all modules in the site-packages directory
         for _, package_name, _ in pkgutil.iter_modules([site_packages_path]):
 
-            # Check if the package name starts with 'CloudHarvestPlugin'
-            if package_name.startswith('CloudHarvestPlugin'):
+            # Check if the package name starts with 'CloudHarvest'
+            if package_name.startswith('CloudHarvest'):
 
                 # Try to import the '__register__.py' file from the package
                 try:
