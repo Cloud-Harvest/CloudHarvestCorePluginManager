@@ -10,13 +10,14 @@ class TestDecorators(unittest.TestCase):
         Registry.instances = []
 
     def test_register_definition(self):
-        @register_definition
+        @register_definition(name='test_class_name')
         class TestClass:
             pass
 
         # Check if the class was added to the Registry's definitions
-        self.assertIn('TestClass', Registry.definitions)
-        self.assertEqual(Registry.definitions['TestClass'], TestClass)
+        self.assertIn(TestClass, Registry.definitions.values())
+        self.assertEqual(Registry.definitions['test_class_name'], TestClass)
+        self.assertEqual(Registry.find_definition(class_name='test_class_name'), [TestClass])
 
     def test_register_instance(self):
         @register_instance
