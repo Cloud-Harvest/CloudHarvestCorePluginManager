@@ -1,6 +1,7 @@
 from typing import List
+from logging import getLogger
 
-from registry import logger
+logger = getLogger('harvest')
 
 
 def list_plugins_from_github_organization(organization: str) -> List[str]:
