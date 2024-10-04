@@ -1,52 +1,45 @@
 import unittest
 from CloudHarvestCorePluginManager.registry import Registry
+from CloudHarvestCorePluginManager.decorators import register_definition
 
 
 class TestRegistry(unittest.TestCase):
     def setUp(self):
         # Clear the Registry before each test
-        Registry.definitions = {}
-        Registry.instances = []
+        Registry.clear()
 
     def test_find_definition(self):
+        @register_definition(name='test_class', category='task', register_instances=True)
         class TestClass:
             pass
 
         # Add a class to the Registry's definitions
-        Registry.definitions['TestClass'] = TestClass
+        Registry.add(category='task', name='test_class', cls=TestClass)
 
-        # Test find_definition with the class name
-        result = Registry.find_definition('TestClass', None, None, False)
-        self.assertEqual(result, [TestClass])
+        # Test find with the configuration name
+        result = Registry.find(result_key='name', name='test_class')[0]
+        self.assertEqual(result, 'test_class')
 
-        # Test find_definition with is_instance_of
-        result = Registry.find_definition(None, type, None, False)
-        self.assertEqual(result, [TestClass])
+        # Test find with the class name
+        result = Registry.find(result_key='cls', name='test_class')[0]
+        self.assertEqual(result, TestClass)
 
-        # Test find_definition with is_subclass_of
-        result = Registry.find_definition(None, None, object, False)
-        self.assertEqual(result, [TestClass])
+        # Test find with the category
+        result = Registry.find(result_key='category', category='task')[0]
+        self.assertEqual(result, 'task')
 
-    def test_find_instance(self):
-        class TestClass:
+        test_instance = TestClass()
+        self.assertIn(test_instance, Registry.find(result_key='instances', name='test_class'))
+
+        @register_definition(name='test_class2', category='task')
+        class UnregisteredClass:
             pass
 
-        # Create an instance of the class and add it to the Registry's instances
-        instance = TestClass()
-        Registry.instances.append(instance)
+        # Test find with an unregistered class
+        self.assertIn(UnregisteredClass, Registry.find(result_key='cls', name='test_class2'))
 
-        # Test find_instance with the class name
-        result = Registry.find_instance('TestClass', None, None, False)
-        self.assertEqual(result, [instance])
-
-        # Test find_instance with is_instance_of
-        result = Registry.find_instance(None, TestClass, None, False)
-        self.assertEqual(result, [instance])
-
-        # Test find_instance with is_subclass_of
-        result = Registry.find_instance(None, None, object, False)
-        self.assertEqual(result, [instance])
-
+        unregistered_class = UnregisteredClass()
+        self.assertEqual([], Registry.find(result_key='instances', name='test_class2'))
 
 if __name__ == '__main__':
     unittest.main()
