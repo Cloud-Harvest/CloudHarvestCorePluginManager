@@ -1,34 +1,50 @@
 import unittest
-from CloudHarvestCorePluginManager.decorators import register_definition, register_instance
+from CloudHarvestCorePluginManager.decorators import register_definition
 from CloudHarvestCorePluginManager.registry import Registry
 
 
 class TestDecorators(unittest.TestCase):
     def setUp(self):
         # Clear the Registry before each test
-        Registry.definitions = {}
-        Registry.instances = []
+        Registry.clear()
 
     def test_register_definition(self):
-        @register_definition(name='test_class_name')
+        @register_definition(name='test_class_name', category='task', register_instances=True)
         class TestClass:
-            pass
+            def __init__(self, *args, **kwargs):
+                pass
 
         # Check if the class was added to the Registry's definitions
-        self.assertIn(TestClass, Registry.definitions.values())
-        self.assertEqual(Registry.definitions['test_class_name'], TestClass)
-        self.assertEqual(Registry.find_definition(class_name='test_class_name'), [TestClass])
+        self.assertIn('test_class_name', Registry._OBJECTS.keys())
+        self.assertEqual(Registry._OBJECTS['test_class_name']['category'], 'task')
+        self.assertEqual(Registry._OBJECTS['test_class_name']['cls'], TestClass)
+        self.assertEqual(Registry.find(result_key='cls', name='test_class_name', category='task'), [TestClass])
 
-    def test_register_instance(self):
-        @register_instance
-        class TestClass:
-            pass
+        test_class = TestClass()
+        self.assertEqual(test_class, Registry._OBJECTS['test_class_name']['instances'][0])
+        self.assertIn(test_class, Registry.find(result_key='instances', name='test_class_name', category='task'))
 
-        # Create an instance of the class
-        instance = TestClass()
+        @register_definition(name='test_class_name2', category='task', register_instances=True)
+        class TestClass2:
+            def __init__(self, *args, **kwargs):
+                pass
 
-        # Check if the instance was added to the Registry's instances
-        self.assertIn(instance, Registry.instances)
+        # Check if the class was added to the Registry's definitions
+        self.assertIn('test_class_name2', Registry._OBJECTS.keys())
+        self.assertEqual(Registry._OBJECTS['test_class_name2']['category'], 'task')
+        self.assertEqual(Registry._OBJECTS['test_class_name2']['cls'], TestClass2)
+        self.assertEqual(Registry.find(result_key='cls', name='test_class_name2', category='task'), [TestClass2])
+
+        test_class2A = TestClass2()
+        test_class2B = TestClass2()
+        test_class2C = TestClass2()
+
+        self.assertEqual(3, len(Registry._OBJECTS['test_class_name2']['instances']))
+        self.assertIn(test_class2A, Registry._OBJECTS['test_class_name2']['instances'])
+        self.assertIn(test_class2B, Registry._OBJECTS['test_class_name2']['instances'])
+        self.assertIn(test_class2C, Registry._OBJECTS['test_class_name2']['instances'])
+
+        self.assertEqual(1, len(Registry.find(result_key='instances', name='test_class_name', category='task')))
 
 
 if __name__ == '__main__':

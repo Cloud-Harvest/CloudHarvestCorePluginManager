@@ -18,7 +18,6 @@ for more information.
 - [How to Implement Your Plugin](#how-to-implement-your-plugin)
   - [Decorators](#decorators)
     - [`register_definition`](#register_definition)
-    - [`register_instance`](#register_instance)
   - [`__registry__.py`](#__registry__py)
 - [License](#license)
 - [Special License Considerations](#special-license-considerations)
@@ -45,8 +44,10 @@ When creating a new `Task` or `TaskChain`, it is recommended to use the followin
     - The same as the class name without the suffix
     - Lowercase
     - With underscores between camel case words
+- Any registered object should being with a short plugin identifier in its name, such as `aws_` or `gcp_`
+  - The exception to this rule is any `Core` component which does not require a prefix.
 
-For example, a class named `MyTask` should be called in a `TaskChain` YAML file as `my`. A practical example of this is `CacheAggregateTask` which is called as `cache_aggregate`.
+For example, a class named `MyTask` should be called in a `TaskChain` YAML file as `my`. If this Task is part of the Aws plugin, it would read `aws_my`.
 
 ### Task Chain YAML
 All TaskChains are defined in YAML files. The following is an example of a TaskChain YAML file:
@@ -95,38 +96,23 @@ such as [CloudHarvestApi](https://github.com/Cloud-Harvest/CloudHarvestApi/blob/
 ```python
 # In this example, we add the MyNewTask class to the Registry.
 from CloudHarvestCoreTasks.base import BaseTask
-from CloudHarvestCorePluginManager.decorators import register_definition, register_instance
+from CloudHarvestCorePluginManager.decorators import register_definition
 
-@register_definition
+@register_definition(category='task', name='my_new_task', register_instances=False)
 class MyNewTask(BaseTask):
   def __init__(self):
     pass
 
 # Elsewhere in the code, use the following to execute your class:
 from CloudHarvestCorePluginManager.registry import Registry
-my_class = Registry.find_definition('MyNewTask')[0](my_arg='my_value')
-```
-
-### `register_instance`
-```python
-# In this example, add instances of a class to the Registry.
-from CloudHarvestCorePluginManager.decorators import register_instance
-@register_instance
-class MyClass:
-    def __init__(self):
-        pass
-
-myclass = MyClass()
+my_class = Registry.find(result_key='cls', name='my_new_task')[0](my_arg='my_value')
 ```
 
 ## `__registry__.py`
 ```python
 # Captures definitions
 from .tasks import MyNewTask, MyOtherNewTask
-
-# Captures instances
 from .blueprints import my_blueprint
-
 ```
 
 # License
