@@ -46,6 +46,14 @@ class TestDecorators(unittest.TestCase):
 
         self.assertEqual(1, len(Registry.find(result_key='instances', name='test_class_name', category='task')))
 
+        # Test that the class metadata was added
+        self.assertTrue(hasattr(TestClass, 'metadata'))
+
+        from json import load
+        with open('../meta.json') as metadata_file:
+            metadata = load(metadata_file)
+
+        self.assertEqual(getattr(test_class, 'metadata'), metadata)
 
 if __name__ == '__main__':
     unittest.main()

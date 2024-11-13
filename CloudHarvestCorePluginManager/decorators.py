@@ -1,4 +1,9 @@
+from os.path import expanduser, abspath
+
 from .registry import Registry
+from logging import getLogger
+
+logger = getLogger('harvest')
 
 
 def register_definition(category: str, name: str, register_instances: bool = False):
@@ -23,6 +28,10 @@ def register_definition(category: str, name: str, register_instances: bool = Fal
         :return: The class
         """
 
+        # Get the class's module metadata
+        metadata = get_class_module_metadata(cls)
+        setattr(cls, 'metadata', metadata)
+
         # Add the class to the Registry
         Registry.add(name=name, category=category, cls=cls)
 
@@ -43,3 +52,36 @@ def register_definition(category: str, name: str, register_instances: bool = Fal
         return cls
 
     return decorator
+
+def get_class_module_metadata(cls) -> dict:
+    # Here we'll read the module's metadata and store it for future reference
+    from os.path import abspath, expanduser, join, sep
+    from inspect import getmodule
+    module = getmodule(cls)
+
+    new_path = []
+    from re import compile
+    for part in abspath(expanduser(module.__file__)).split(sep):
+        # Skip empty parts
+        if part == '':
+            continue
+
+        new_path.append(part)
+
+        # We only want to include the module path up to the root module directory where we can find the meta.json file
+        # This regex expression will match the root module directory, but not the root development directory
+        # commonly named 'CloudHarvest'.
+        if compile('CloudHarvest.').match(part):
+            break
+
+    module_path = join('/', *new_path)
+    module_name = new_path[-1]
+
+    try:
+        meta_path = join(module_path, 'meta.json')
+        import json
+        with open(join(meta_path), 'r') as metadata_file:
+            return json.load(metadata_file)
+
+    except FileNotFoundError:
+        logger.error(f"Metadata file not found for class {cls.__name__} in module {module_name}")

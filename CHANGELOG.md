@@ -1,3 +1,6 @@
+# 0.3.1
+- Added `decorators.get_class_module_metadata()` which attaches module-level metadata to classes
+
 # 0.3.0
 - Completely rewrote how registered objects are stored and retrieved
   - Objects are now stored in `registry.Registry._OBJECTS` as a dictionary with the configuration name as the key.
