@@ -30,7 +30,7 @@ def register_definition(category: str, name: str, register_instances: bool = Fal
 
         # Get the class's module metadata
         metadata = get_class_module_metadata(cls)
-        setattr(cls, 'metadata', metadata)
+        setattr(cls, '_harvest_plugin_metadata', metadata)
 
         # Add the class to the Registry
         Registry.add(name=name, category=category, cls=cls)
