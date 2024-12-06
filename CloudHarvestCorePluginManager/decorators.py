@@ -1,18 +1,18 @@
-from os.path import expanduser, abspath
-
 from .registry import Registry
 from logging import getLogger
+from typing import List
 
 logger = getLogger('harvest')
 
 
-def register_definition(category: str, name: str, register_instances: bool = False):
+def register_definition(category: str, name: str, register_instances: bool = False, tags: List[str] = None):
     """
     A decorator to register a class in the Registry when it is defined.
 
     :param category: The category of the class. Lowercase is enforced.
     :param name: The name of the class. Lowercase is enforced.
     :param register_instances: If True, automatically register instances of the class. It is not necessary to register
+    :param tags: Optional tags to associate with the class.
     instances unless the application must later retrieve them, such as CommandSet (CLI) or Blueprint (API) instances.
 
     Example
@@ -33,7 +33,7 @@ def register_definition(category: str, name: str, register_instances: bool = Fal
         setattr(cls, '_harvest_plugin_metadata', metadata)
 
         # Add the class to the Registry
-        Registry.add(name=name, category=category, cls=cls)
+        Registry.add(name=name, category=category, cls=cls, tags=tags)
 
         if register_instances:
             original_init = cls.__init__
@@ -43,7 +43,7 @@ def register_definition(category: str, name: str, register_instances: bool = Fal
                 original_init(self, *args, **kwargs)
 
                 # Add the instance to the Registry
-                Registry.add(name=name, instances=[self])
+                Registry.add(name=name, instances=[self], tags=tags)
 
             # Replace the class's __init__ method with the new one
             cls.__init__ = new_init

@@ -31,7 +31,8 @@ Example
 >>>     'name': {
 >>>         'category': 'task',
 >>>         'cls': Any,
->>>         'instances': []
+>>>         'instances': [],
+>>>         'tags': []
 >>>     }
 >>> }
 
@@ -53,7 +54,7 @@ class Registry:
     _OBJECTS = {}
 
     @staticmethod
-    def add(name: str, category: str = None, cls: Any = None, instances: List[Any] = None) -> None:
+    def add(name: str, category: str = None, cls: Any = None, instances: List[Any] = None, tags: List[str] = None) -> None:
         """
         Adds the provided object to the Registry.
 
@@ -61,6 +62,7 @@ class Registry:
         :param category: The category of the object to add.
         :param cls: The class of the object to add.
         :param instances: One or more instantiated objects to add to the Registry.
+        :param tags: A list of tags to associate with the object.
         """
 
         # Check if the object already exists in the Registry
@@ -73,7 +75,8 @@ class Registry:
                 Registry._OBJECTS[name.lower()] = {
                     'category': category.lower(),
                     'cls': cls,
-                    'instances': []
+                    'instances': [],
+                    'tags': tags or []
                 }
 
         # If instances are provided, add them to the object's instances list, but only if the object is not already in the
@@ -98,7 +101,12 @@ class Registry:
         return None
 
     @staticmethod
-    def find(result_key: str, name: str = None, category: str = None, cls: Any = None, limit: int = 1) -> List[Any]:
+    def find(result_key: str,
+             name: str = None,
+             category: str = None,
+             cls: Any = None,
+             tags: List[str] = None,
+             limit: int = 1) -> List[Any]:
         """
         Finds and returns the result_key based on the provided criteria.
 
@@ -106,6 +114,7 @@ class Registry:
         :param name: The name of the object to find.
         :param category: The category of the object to find.
         :param cls: The class of the object to find. If provided, the object must be an instance or subclass of this class.
+        :param tags: A list of tags to filter the results by.
         :param limit: Maximum matching items to return.
         :return: The result_key of objects matching the provided criteria.
 
@@ -135,8 +144,15 @@ class Registry:
             if cls and cls is _config['cls']:
                 continue
 
+            if tags and not any(tag in _config['tags'] for tag in tags):
+                continue
+
             if result_key == 'name':
                 result.append(_name)
+
+            elif result_key == '*':
+                # Returns the entire object configuration
+                result.append(_config | {'name': _name})
 
             else:
                 if _config.get(result_key):

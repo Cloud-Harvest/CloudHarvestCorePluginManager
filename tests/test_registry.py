@@ -41,5 +41,15 @@ class TestRegistry(unittest.TestCase):
         unregistered_class = UnregisteredClass()
         self.assertEqual([], Registry.find(result_key='instances', name='test_class2'))
 
+        # Test tags
+        @register_definition(name='test_class3', category='task', tags=['tag1', 'tag2'])
+        class TaggedClass:
+            pass
+
+        self.assertIn(TaggedClass, Registry.find(result_key='cls', tags=['tag1']))
+        self.assertIn(TaggedClass, Registry.find(result_key='cls', tags=['tag2']))
+        self.assertIn(TaggedClass, Registry.find(result_key='cls', tags=['tag1', 'tag2']))
+        self.assertEqual([], Registry.find(result_key='cls', tags=['tag3']))
+
 if __name__ == '__main__':
     unittest.main()

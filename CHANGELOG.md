@@ -1,3 +1,15 @@
+# 0.4.0
+- Updated the `register_definition()` decorator to accept meta argument `tags`.
+  - `tags` is a list of strings that can be used to further categorize classes.
+  - the `Registry.find()` method was updated to include searches by Tags.
+    - When searching by tags:
+      - the search is an OR operation meaning that at least one tag must match.
+      - the search is case-sensitive.
+    - `result_key` can now be set to `*` which returns the entire record for each match including metadata like `tags` and `category`.
+- Added the `register_task_templates()` method to `functions`.
+  - This method registers the contents of YAML files stored in CloudHarvest `template` directories throughout the application and its packages.
+  - The `cls` is populated by the actual content of the file, a dictionary.
+
 # 0.3.1
 - Added `decorators.get_class_module_metadata()` which attaches module-level metadata to classes
 

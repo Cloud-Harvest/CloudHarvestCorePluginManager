@@ -1,5 +1,7 @@
-from typing import List
+from enum import unique
+from typing import Dict, List
 from logging import getLogger
+from unicodedata import category
 
 logger = getLogger('harvest')
 
@@ -58,3 +60,70 @@ def register_objects():
 
             else:
                 logger.info(f'Loaded package: {package_name}')
+
+
+def register_task_templates(templates_dict: Dict[str, Dict]) -> None:
+    """
+    Registers task templates in the Registry.
+
+    Args:
+        templates_dict (Dict[str, Dict]): A dictionary of unique names (keys) and the contents of the files (values).
+    """
+    from CloudHarvestCorePluginManager.registry import Registry
+
+    for template_name, template_configuration in templates_dict.items():
+        Registry.add(name=template_name,
+                     category='template',
+                     cls=template_configuration['template'],
+                     tags=template_configuration['tags'])
+
+
+def find_task_templates() -> Dict[str, Dict]:
+    """
+    Scans the current project and all site packages for a `templates` directory, finds all nested YAML files,
+    constructs unique names for the objects, and returns a dictionary of unique names and the contents of the files
+    loaded using the YAML FullLoader.
+
+    Returns:
+        A dictionary of unique names (keys) and the contents of the files (values).
+    """
+    import os
+    import yaml
+    import site
+
+    templates_dict = {}
+
+    def scan_directory(directory: str):
+        for root_path, _, files in os.walk(directory):
+            if 'templates' in root_path:
+                for file in files:
+                    if file.endswith('.yaml'):
+                        file_path = os.path.join(root_path, file)
+                        unique_name = '.'.join(
+                            os.path.relpath(file_path, directory).split(os.sep)[1:-1] + [os.path.splitext(file)[0]]
+                        )
+
+                        template_tags = unique_name.split('.')[0]
+                        template_name = '.'.join(unique_name.split('.')[1:])
+
+                        if templates_dict.get(unique_name):
+                            logger.debug(f'Found duplicate template: {unique_name}')
+                            continue
+
+                        with open(file_path, 'r') as yaml_file:
+                            templates_dict[template_name] = {
+                                'template': yaml.load(yaml_file, Loader=yaml.FullLoader),
+                                'tags': template_tags
+                            }
+
+    # Scan the current project directory
+    scan_directory(os.getcwd())
+
+    # Scan the site-packages directories
+    for site_packages_path in site.getsitepackages():
+        for root, dirs, _ in os.walk(site_packages_path):
+            for dir_name in dirs:
+                if dir_name.startswith('CloudHarvest'):
+                    scan_directory(os.path.join(root, dir_name))
+
+    return templates_dict
