@@ -54,41 +54,44 @@ class Registry:
     _OBJECTS = {}
 
     @staticmethod
-    def add(name: str, category: str = None, cls: Any = None, instances: List[Any] = None, tags: List[str] = None) -> None:
+    def add(category: str, name: str, cls: Any = None, instances: List[Any] = None, tags: List[str] = None) -> dict:
         """
         Adds the provided object to the Registry.
 
-        :param name: The name of the object to add.
-        :param category: The category of the object to add.
-        :param cls: The class of the object to add.
-        :param instances: One or more instantiated objects to add to the Registry.
-        :param tags: A list of tags to associate with the object.
+        Arguments
+        category (str): The category of the object to add.
+        name (str): The name of the object to add.
+        cls (Any): The class of the object to add.
+        instances (List[Any]): One or more instantiated objects to add to the Registry.
+        tags (List[str]): A list of tags to associate with the object.
+
         """
 
-        # Check if the object already exists in the Registry
-        if not Registry._OBJECTS.get(name):
-            if not category or not cls:
-                raise ValueError('Category and class must be provided when adding a new object to the Registry.')
+        registered_name = f'{category}-{name}'.lower()
 
-            else:
-                # Add the object to the Registry
-                Registry._OBJECTS[name.lower()] = {
-                    'category': category.lower(),
-                    'cls': cls,
-                    'instances': [],
-                    'tags': tags or []
-                }
+        # Check if the object already exists in the Registry
+        if not Registry._OBJECTS.get(registered_name):
+            # Add the object to the Registry
+            Registry._OBJECTS[registered_name] = {
+                'name': name.lower(),
+                'category': category.lower(),
+                'cls': cls,
+                'instances': [],
+                'tags': tags or []
+            }
+
+            logger.debug(f'Registered {category.lower()}: {name}')
 
         # If instances are provided, add them to the object's instances list, but only if the object is not already in the
         # list. This prevents duplicate instances from being added.
         if instances:
             [
-                Registry._OBJECTS[name]['instances'].append(instance)
+                Registry._OBJECTS[registered_name]['instances'].append(instance)
                 for instance in instances
-                if instance not in Registry._OBJECTS[name]['instances']
+                if instance not in Registry._OBJECTS[registered_name]['instances']
             ]
 
-        return None
+        return Registry._OBJECTS.get(registered_name)
 
     @staticmethod
     def clear() -> None:
@@ -97,13 +100,14 @@ class Registry:
         """
 
         Registry._OBJECTS.clear()
+        logger.debug('Registry cleared.')
 
         return None
 
     @staticmethod
     def find(result_key: str,
-             name: str = None,
              category: str = None,
+             name: str = None,
              cls: Any = None,
              tags: List[str] = None,
              limit: int = 1) -> List[Any]:
@@ -111,8 +115,8 @@ class Registry:
         Finds and returns the result_key based on the provided criteria.
 
         :param result_key: The key to return.
-        :param name: The name of the object to find.
         :param category: The category of the object to find.
+        :param name: The name of the object to find.
         :param cls: The class of the object to find. If provided, the object must be an instance or subclass of this class.
         :param tags: A list of tags to filter the results by.
         :param limit: Maximum matching items to return.
@@ -134,33 +138,33 @@ class Registry:
 
         result = []
 
-        for _name, _config in Registry._OBJECTS.items():
-            if name and name.lower() != _name:
+        for registered_name, config in Registry._OBJECTS.items():
+            # Although 'category' comes first in the registered_name, names are more likely to be unique. Therefore, it
+            # is more efficient to check the name first.
+            if name and name.lower() != config['name']:
                 continue
 
-            if category and category.lower() != _config['category']:
+            if category and category.lower() != config['category']:
                 continue
 
-            if cls and cls is _config['cls']:
+            if cls and not issubclass(config['cls'], cls):
                 continue
 
-            if tags and not any(tag in _config['tags'] for tag in tags):
+            if tags and not any(tag in config['tags'] for tag in tags):
                 continue
 
-            if result_key == 'name':
-                result.append(_name)
+            # If the result_key is '*', return the entire configuration
+            if result_key == '*':
+                result.append(config)
 
-            elif result_key == '*':
-                # Returns the entire object configuration
-                result.append(_config | {'name': _name})
-
+            # Otherwise, return the specified key from the configuration
             else:
-                if _config.get(result_key):
-                    if isinstance(_config[result_key], list):
-                        result.extend(_config[result_key])
+                if config.get(result_key):
+                    if isinstance(config[result_key], list):
+                        result.extend(config[result_key])
 
                     else:
-                        result.append(_config[result_key])
+                        result.append(config[result_key])
 
             if len(result) >= limit:
                 break
@@ -168,34 +172,19 @@ class Registry:
         return result
 
     @staticmethod
-    def remove(name: str = None, category: str = None, cls: Any = None, instances: List[Any] = None) -> None:
+    def remove(name: str, category: str) -> None:
         """
         Removes the object with the provided name from the Registry.
 
         :param name: The configuration name to remove.
         :param category: The category of the object to remove.
-        :param cls: The class of the object to remove.
-        :param instances: One or more instances of the object to remove.
         """
 
-        if name:
-            name = name.lower()
-            if Registry._OBJECTS.get(name):
-                Registry._OBJECTS.pop(name)
+        registered_name = f'{category}-{name}'.lower()
 
-        if category or cls or instances:
-            for _name in tuple(Registry._OBJECTS.keys()):
-                if category and category.lower() == Registry._OBJECTS[_name]['category']:
-                    Registry._OBJECTS.pop(_name)
-                    continue
+        if Registry._OBJECTS.get(registered_name):
+            Registry._OBJECTS.pop(registered_name)
 
-                if cls and cls is Registry._OBJECTS[_name]['cls']:
-                    Registry._OBJECTS.pop(_name)
-                    continue
-
-                if instances:
-                    for instance in instances:
-                        if instance in Registry._OBJECTS[_name]['instances']:
-                            Registry._OBJECTS[_name]['instances'].remove(instance)
+            logger.debug(f'Removed {registered_name} from the Registry.')
 
         return None

@@ -31,6 +31,17 @@ def list_plugins_from_github_organization(organization: str) -> List[str]:
 
     return []
 
+def register_all():
+    """
+    Executes all methods in this file that start with 'register_' (except for this method).
+    """
+
+    import inspect
+
+    for name, method in inspect.getmembers(globals()):
+        if name.startswith('register_') and name != 'register_all':
+            logger.info(f'Executing: {name}')
+            method()
 
 def register_objects():
     """
@@ -62,31 +73,18 @@ def register_objects():
                 logger.info(f'Loaded package: {package_name}')
 
 
-def register_task_templates(templates_dict: Dict[str, Dict]) -> None:
+def register_task_templates():
     """
-    Registers task templates in the Registry.
+    Scans the current project directory and all site-packages directories for template files and registers them in the
+    Registry. Template files must be
+        - In YAML format and have a '.yaml' extension.
+        - Located in a package with the prefix 'CloudHarvest'.
+        - Be located in a 'templates' directory of the package.
 
-    Args:
-        templates_dict (Dict[str, Dict]): A dictionary of unique names (keys) and the contents of the files (values).
+    Templates are named based on their directory path relative to the 'templates' directory. For example, a template file
+    located at 'CloudHarvestPluginExample/templates/example.yaml' would be registered as 'example'.
     """
-    from CloudHarvestCorePluginManager.registry import Registry
 
-    for template_name, template_configuration in templates_dict.items():
-        Registry.add(name=template_name,
-                     category='template',
-                     cls=template_configuration['template'],
-                     tags=template_configuration['tags'])
-
-
-def find_task_templates() -> Dict[str, Dict]:
-    """
-    Scans the current project and all site packages for a `templates` directory, finds all nested YAML files,
-    constructs unique names for the objects, and returns a dictionary of unique names and the contents of the files
-    loaded using the YAML FullLoader.
-
-    Returns:
-        A dictionary of unique names (keys) and the contents of the files (values).
-    """
     import os
     import yaml
     import site
@@ -103,18 +101,12 @@ def find_task_templates() -> Dict[str, Dict]:
                             os.path.relpath(file_path, directory).split(os.sep)[1:-1] + [os.path.splitext(file)[0]]
                         )
 
-                        template_tags = unique_name.split('.')[0]
-                        template_name = '.'.join(unique_name.split('.')[1:])
-
                         if templates_dict.get(unique_name):
                             logger.debug(f'Found duplicate template: {unique_name}')
                             continue
 
-                        with open(file_path, 'r') as yaml_file:
-                            templates_dict[template_name] = {
-                                'template': yaml.load(yaml_file, Loader=yaml.FullLoader),
-                                'tags': template_tags
-                            }
+                        with (open(file_path, 'r') as yaml_file):
+                            templates_dict[unique_name] = yaml.load(yaml_file, Loader=yaml.FullLoader)
 
     # Scan the current project directory
     scan_directory(os.getcwd())
@@ -126,4 +118,17 @@ def find_task_templates() -> Dict[str, Dict]:
                 if dir_name.startswith('CloudHarvest'):
                     scan_directory(os.path.join(root, dir_name))
 
-    return templates_dict
+    # Register the located templates
+    from .registry import Registry
+    for template_name, template_data in templates_dict.items():
+        # Ensure the template name is valid
+        if len(template_name.split('.')) < 3:
+            logger.warning(f'Invalid template name: {template_name}. Templates must be in a subdirectory of the `template` directory. This defines the kind of template (e.g. report, service, task). Skipping...')
+
+        # The first position in the template name is the category, and the rest is the registration name
+        template_category = template_name.split('.')[1]
+        template_registration_name = '.'.join(template_name.split('.')[2:])
+
+        Registry.add(name=template_registration_name,
+                     category=f'template_{template_category}',
+                     cls=template_data)

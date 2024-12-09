@@ -43,7 +43,7 @@ def register_definition(category: str, name: str, register_instances: bool = Fal
                 original_init(self, *args, **kwargs)
 
                 # Add the instance to the Registry
-                Registry.add(name=name, instances=[self], tags=tags)
+                Registry.add(name=name, category=category, instances=[self], tags=tags)
 
             # Replace the class's __init__ method with the new one
             cls.__init__ = new_init

@@ -9,6 +9,10 @@
 - Added the `register_task_templates()` method to `functions`.
   - This method registers the contents of YAML files stored in CloudHarvest `template` directories throughout the application and its packages.
   - The `cls` is populated by the actual content of the file, a dictionary.
+- `Registry.add()` now registers objects using a `category-task` convention
+  - This allows objects with the same name to be registered in different categories (ie `report` and `service` templates)
+  - Updated associated methods accordingly
+  - `category` is now required when registering objects
 
 # 0.3.1
 - Added `decorators.get_class_module_metadata()` which attaches module-level metadata to classes
