@@ -194,9 +194,13 @@ def register_all():
     Executes all methods in this file that start with 'register_' (except for this method).
     """
 
-    import inspect
+    methods = {
+        name: method
+        for name, method in globals().items()
+        if name.startswith('register_') and name != 'register_all'
+    }
 
-    for name, method in inspect.getmembers(globals()):
+    for name, method in methods.items():
         if name.startswith('register_') and name != 'register_all':
             logger.info(f'Executing: {name}')
             method()
