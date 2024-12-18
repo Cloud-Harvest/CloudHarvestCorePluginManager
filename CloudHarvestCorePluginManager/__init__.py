@@ -3,5 +3,4 @@ This module exposes key functionality for the CloudHarvestCorePluginManager pack
 """
 
 from .decorators import register_definition
-from .functions import register_all
-from .registry import Registry
+from .registry import Registry, register_all
