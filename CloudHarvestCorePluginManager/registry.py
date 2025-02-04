@@ -110,7 +110,7 @@ class Registry:
              name: str = None,
              cls: Any = None,
              tags: List[str] = None,
-             limit: int = 1) -> List[Any]:
+             limit: int or None = 1) -> List[Any]:
         """
         Finds and returns the result_key based on the provided criteria.
 
@@ -166,7 +166,7 @@ class Registry:
                     else:
                         result.append(config[result_key])
 
-            if len(result) >= limit:
+            if limit and len(result) >= limit:
                 break
 
         return result
