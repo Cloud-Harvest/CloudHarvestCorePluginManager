@@ -259,9 +259,11 @@ def register_task_templates():
                 for file in files:
                     if file.endswith('.yaml'):
                         file_path = os.path.join(root_path, file)
-                        unique_name = '.'.join(
-                            os.path.relpath(file_path, directory).split(os.sep)[1:-1] + [os.path.splitext(file)[0]]
-                        )
+                        split_path = file_path.split(os.sep)
+                        category_position = split_path.index('templates') + 1
+                        category = split_path[category_position]
+                        name = '.'.join(split_path[category_position + 1:]).replace('.yaml', '')
+                        unique_name = f'{category}.{name}'
 
                         if templates_dict.get(unique_name):
                             logger.debug(f'Found duplicate template: {unique_name}')
@@ -282,13 +284,10 @@ def register_task_templates():
 
     # Register the located templates
     for template_name, template_data in templates_dict.items():
-        # Ensure the template name is valid
-        if len(template_name.split('.')) < 3:
-            logger.warning(f'Invalid template name: {template_name}. Templates must be in a subdirectory of the `template` directory. This defines the kind of template (e.g. report, service, task). Skipping...')
 
         # The first position in the template name is the category, and the rest is the registration name
-        template_category = template_name.split('.')[1]
-        template_registration_name = '.'.join(template_name.split('.')[2:])
+        template_category = template_name.split('.')[0]
+        template_registration_name = '.'.join(template_name.split('.')[1:])
 
         Registry.add(name=template_registration_name,
                      category=f'template_{template_category}',

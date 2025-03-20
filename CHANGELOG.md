@@ -1,3 +1,6 @@
+# 0.4.1
+- Fixes for object registration path and naming
+
 # 0.4.0
 - Updated the `register_definition()` decorator to accept meta argument `tags`.
   - `tags` is a list of strings that can be used to further categorize classes.
