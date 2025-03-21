@@ -135,7 +135,7 @@ class Registry:
         >>> Registry.find(result_key='cls', name='my_class', category='task', limit=1)
         >>> [class1]
         """
-        from re import fullmatch, IGNORECASE
+        from re import findall, IGNORECASE
 
         result = []
 
@@ -145,7 +145,7 @@ class Registry:
             if name and name.lower() != config['name']:
                 continue
 
-            if category and not fullmatch(category, config['category'], flags=IGNORECASE):
+            if category and not findall(category, config['category'], flags=IGNORECASE):
                 continue
 
             if cls and not issubclass(config['cls'], cls):
