@@ -1,3 +1,8 @@
+# 0.5.0
+- Added the `plugins` module
+  - reads/generates the `plugins.txt` file
+  - installs plugins using `pip`
+
 # 0.4.1
 - Fixes for object registration path and naming
 
