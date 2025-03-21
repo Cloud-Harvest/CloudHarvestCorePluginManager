@@ -115,7 +115,7 @@ class Registry:
         Finds and returns the result_key based on the provided criteria.
 
         :param result_key: The key to return.
-        :param category: The category of the object to find.
+        :param category: The category of the object to find. This is a regex expression.
         :param name: The name of the object to find.
         :param cls: The class of the object to find. If provided, the object must be an instance or subclass of this class.
         :param tags: A list of tags to filter the results by.
@@ -135,6 +135,7 @@ class Registry:
         >>> Registry.find(result_key='cls', name='my_class', category='task', limit=1)
         >>> [class1]
         """
+        from re import fullmatch, IGNORECASE
 
         result = []
 
@@ -144,7 +145,7 @@ class Registry:
             if name and name.lower() != config['name']:
                 continue
 
-            if category and category.lower() != config['category']:
+            if category and not fullmatch(category, config['category'], flags=IGNORECASE):
                 continue
 
             if cls and not issubclass(config['cls'], cls):

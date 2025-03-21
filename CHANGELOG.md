@@ -2,6 +2,7 @@
 - Added the `plugins` module
   - reads/generates the `plugins.txt` file
   - installs plugins using `pip`
+- The `Registry.find()` method now uses regex in the `category` parameter
 
 # 0.4.1
 - Fixes for object registration path and naming
