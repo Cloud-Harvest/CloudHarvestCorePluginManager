@@ -1,3 +1,29 @@
+# 0.5.0
+- Added the `plugins` module
+  - reads/generates the `plugins.txt` file
+  - installs plugins using `pip`
+- The `Registry.find()` method now uses regex in the `category` parameter
+
+# 0.4.1
+- Fixes for object registration path and naming
+
+# 0.4.0
+- Updated the `register_definition()` decorator to accept meta argument `tags`.
+  - `tags` is a list of strings that can be used to further categorize classes.
+  - the `Registry.find()` method was updated to include searches by Tags.
+    - When searching by tags:
+      - the search is an OR operation meaning that at least one tag must match.
+      - the search is case-sensitive.
+    - `result_key` can now be set to `*` which returns the entire record for each match including metadata like `tags` and `category`.
+- Moved all `register_*` methods out of `functions.py` and into `registry.py`. 
+- Added the `register_task_templates()`
+  - This method registers the contents of YAML files stored in CloudHarvest `template` directories throughout the application and its packages.
+  - The `cls` is populated by the actual content of the file, a dictionary.
+- `Registry.add()` now registers objects using a `category-task` convention
+  - This allows objects with the same name to be registered in different categories (ie `report` and `service` templates)
+  - Updated associated methods accordingly
+  - `category` is now required when registering objects
+
 # 0.3.1
 - Added `decorators.get_class_module_metadata()` which attaches module-level metadata to classes
 

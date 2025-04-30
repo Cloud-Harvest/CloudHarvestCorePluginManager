@@ -1,10 +1,10 @@
 import unittest
-from CloudHarvestCorePluginManager.functions import list_plugins_from_github_organization
 
+from CloudHarvestCorePluginManager.functions import list_plugins_from_github_organization
 
 class TestFunctions(unittest.TestCase):
     def test_list_plugins_from_github_organization(self):
-        # Call the function with the mocked response
+        # Attempt to retrieve Cloud-Harvest organization repositories
         result = list_plugins_from_github_organization('Cloud-Harvest')
 
         # Check if the function correctly retrieves the list of repositories

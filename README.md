@@ -67,6 +67,34 @@ All TaskChains are defined in YAML files. The following is an example of a TaskC
 
 For a practical example of how a Task Chain is written, review this report stored in the [CloudHarvestApi](https://github.com/Cloud-Harvest/CloudHarvestApi/blob/main/CloudHarvestApi/api/blueprints/reports/reports/harvest/nodes.yaml).
 
+## Templates
+A `Template` is a YAML file that contains a dictionary of values that can be used to create a `TaskChain`. These files 
+are stored in the `templates` directory of a CloudHarvest repository. The `register_task_templates()` function will read 
+these files and add them to the Registry with a unique name based on the directory structure and file name where `templates`
+is the root template directory.
+
+The first directory name after `templates` is treated as a registration tag. The remaining directory names and file name
+are concatenated with a `.` to create the registration name.
+
+For example, a `Template` file stored in `CloudHarvestApi/api/templates/reports/harvest/nodes.yaml` would be
+registered as `harvest.nodes` with a Registration tag of `reports`.
+
+
+```python
+from CloudHarvestCorePluginManager.registry import Registry
+
+# Example of finding all report templates in the Registry
+report_templates = Registry.find(category='template', tags=['reports'], result_key='cls')
+
+# Example of finding a specific report template in the Registry
+report_template = Registry.find(category='template', name='harvest.nodes', tags=['reports'], result_key='cls')
+
+# 
+```
+
+
+```python
+
 ## Binaries
 If your plugin requires an external binary, such as `aws` or `kubectl`, it will be necessary to include installation runtime in the `main()` function of `post_install.py` in the plugin's root directory. These steps will automatically be executed when the plugin is initialized by Harvest.
 > **Note** The `post_install.py` script is not required for all plugins, only those that require external binaries.

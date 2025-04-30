@@ -130,4 +130,5 @@ dmypy.json
 
 # Harvest-specific
 app
-poetry.lock
+.tmp
+.idea
