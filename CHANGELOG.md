@@ -1,3 +1,6 @@
+# 0.5.1
+- Removed `meta.json` in favor of using `pyproject.toml`
+
 # 0.5.0
 - Added the `plugins` module
   - reads/generates the `plugins.txt` file

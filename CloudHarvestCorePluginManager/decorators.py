@@ -78,10 +78,11 @@ def get_class_module_metadata(cls) -> dict:
     module_name = new_path[-1]
 
     try:
-        meta_path = join(module_path, 'meta.json')
-        import json
+        meta_path = join(module_path, 'pyproject.toml')
+        import tomli
         with open(join(meta_path), 'r') as metadata_file:
-            return json.load(metadata_file)
+            python_package = tomli.load(metadata_file)
+            return python_package.get('project', {}) or {}
 
     except FileNotFoundError:
         logger.error(f"Metadata file not found for class {cls.__name__} in module {module_name}")

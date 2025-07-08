@@ -2,3 +2,4 @@ PyYAML
 flatten_json
 requests
 setuptools
+tomli
