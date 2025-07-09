@@ -80,7 +80,7 @@ def get_class_module_metadata(cls) -> dict:
     try:
         meta_path = join(module_path, 'pyproject.toml')
         import tomli
-        with open(join(meta_path), 'r') as metadata_file:
+        with open(join(meta_path), 'rb') as metadata_file:
             python_package = tomli.load(metadata_file)
             return python_package.get('project', {}) or {}
 
