@@ -9,7 +9,7 @@ include-package-data = true
 where = ["."]
 
 [tool.setuptools.package-data]
-CloudHarvestCoreTasks = [
+CloudHarvestCorePluginManager = [
     "templates/**/*.yaml",
     "pyproject.toml",
 ]
