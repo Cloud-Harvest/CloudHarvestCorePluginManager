@@ -1,0 +1,34 @@
+[build-system]
+requires = ["flit-core>=3.7"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.sdist]
+include = [
+    "templates/**/*.yaml",
+    "pyproject.toml",
+]
+
+[project]
+authors = [ { name = "Cloud Harvest" } ]
+classifiers = [
+    "Programming Language :: Python :: 3.13",
+    "Intended Audience :: Site Reliability Engineers",
+]
+dependencies = [
+    "PyYAML",
+    "flatten_json",
+    "requests",
+    "setuptools",
+    "tomli"
+]
+description = "This module is responsible for managing plugins and their configurations. It is designed to work with both the Cloud Harvest API and the Cloud Harvest CLI to load components from plugins such as the Cloud Harvest AWS Plugin."
+name = "CloudHarvestCorePluginManager"
+readme = "README.md"
+requires-python = ">=3.13"
+version = "0.5.1"
+
+[project.license]
+file = "LICENSE"
+
+[project.urls]
+homepage = "https://github.com/Cloud-Harvest/CloudHarvestCorePluginManager"
